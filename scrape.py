@@ -47,7 +47,7 @@ def main():
     comments_with_matching_ancestors = Counter()
 
     for subreddit_name in tqdm(SUBREDDITS, desc="subreddits", position=0):
-        recent_posts: List[Submission] = list(reddit.subreddit(subreddit_name).new(limit=1000))[:10]
+        recent_posts: List[Submission] = list(reddit.subreddit(subreddit_name).new(limit=1000))
         for post in tqdm(recent_posts, desc="posts", leave=False, position=1):
 
             # Count totals:
