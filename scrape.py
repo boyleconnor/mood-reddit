@@ -36,7 +36,7 @@ def get_reddit() -> praw.Reddit:
     return praw.Reddit(
         client_id=os.getenv("CLIENT_ID"),
         client_secret=os.getenv("CLIENT_SECRET"),
-        user_agent=os.getenv("USER_AGENT"),
+        user_agent="linux:com.example.mood_mentions:v0.0.0 (by u/Acrobatic-Hawk9591)",
     )
 
 
