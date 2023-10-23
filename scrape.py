@@ -1,10 +1,12 @@
+import argparse
 import os
-from collections import Counter
+import pickle
+from pathlib import Path
 from typing import List
 
 import praw
 from dotenv import load_dotenv
-from praw.models import Submission
+from praw.models import Submission, Comment
 from tqdm import tqdm
 
 load_dotenv()
@@ -39,43 +41,33 @@ def get_reddit() -> praw.Reddit:
 
 
 def main():
-    reddit = get_reddit()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-dir", default=Path("./subreddits_data"), type=Path)
+    args = parser.parse_args()
 
-    matching_posts = Counter()
-    matching_comments = Counter()
-    # Number of comments for whom any ancestor contains the keyword
-    comments_with_matching_ancestors = Counter()
+    output_dir: Path = args.output_dir
+    if output_dir.exists():
+        raise FileExistsError(f"Output directory {output_dir!r} already exists!")
+    output_dir.mkdir()
+
+    reddit = get_reddit()
 
     for subreddit_name in tqdm(SUBREDDITS, desc="subreddits", position=0):
         recent_posts: List[Submission] = list(reddit.subreddit(subreddit_name).new(limit=1000))
-        for post in tqdm(recent_posts, desc="posts", leave=False, position=1):
+        (output_dir / subreddit_name).mkdir()
 
-            # Count totals:
-            matching_posts[None] += 1
-            for keyword in KEYWORDS:
-                if keyword in post.selftext:
-                    matching_posts[keyword] += 1
+        # Save posts to file
+        with (output_dir / subreddit_name / "posts.pickle").open("wb") as posts_file:
+            pickle.dump(recent_posts, posts_file)
+
+        recent_posts_comments: List[Comment] = []
+        for post in tqdm(recent_posts, desc="posts", leave=False, position=1):
             # This apparently deals with the API equivalent of the "see more" buttons
             post.comments.replace_more(limit=None)
             # This is supposed to visit all comments (not just top level)
-            for comment in post.comments.list():
-
-                # Get all ancestors of comment
-                ancestors = [comment]
-                while ancestors[-1].parent_id.startswith('t1'):
-                    ancestors.append(ancestors[-1].parent())
-
-                # Count totals:
-                matching_comments[None] += 1
-                for keyword in KEYWORDS:
-                    if any(keyword in ancestor.body for ancestor in ancestors):
-                        comments_with_matching_ancestors[keyword] += 1
-                    if keyword in comment.body:
-                        matching_comments[keyword] += 1
-
-    print(matching_posts)
-    print(matching_comments)
-    print(comments_with_matching_ancestors)
+            recent_posts_comments.extend(post.comments.list())
+        with (output_dir / subreddit_name / "comments.pickle").open("wb") as comments_file:
+            pickle.dump(recent_posts_comments, comments_file)
 
 
 if __name__ == "__main__":
