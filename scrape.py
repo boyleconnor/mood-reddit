@@ -46,28 +46,33 @@ def main():
     args = parser.parse_args()
 
     output_dir: Path = args.output_dir
-    if output_dir.exists():
-        raise FileExistsError(f"Output directory {output_dir!r} already exists!")
-    output_dir.mkdir()
+    if output_dir.exists() and not output_dir.is_dir():
+        raise FileExistsError(f"Cannot use {output_dir!r} as output directory because it is a file!")
+    output_dir.mkdir(exist_ok=True)
 
     reddit = get_reddit()
 
-    for subreddit_name in tqdm(SUBREDDITS, desc="subreddits", position=0):
-        recent_posts: List[Submission] = list(reddit.subreddit(subreddit_name).new(limit=1000))
-        (output_dir / subreddit_name).mkdir()
+    for subreddit_name in tqdm(SUBREDDITS, desc="subreddits", position=1):
+        (output_dir / subreddit_name).mkdir(exist_ok=True)
+        posts_file_path = output_dir / subreddit_name / "posts.pickle"
+        if not posts_file_path.exists():
+            # Save posts to file
+            recent_posts: List[Submission] = list(reddit.subreddit(subreddit_name).new(limit=1000))
+            with posts_file_path.open("wb") as posts_file:
+                pickle.dump(recent_posts, posts_file)
 
-        # Save posts to file
-        with (output_dir / subreddit_name / "posts.pickle").open("wb") as posts_file:
-            pickle.dump(recent_posts, posts_file)
-
-        recent_posts_comments: List[Comment] = []
-        for post in tqdm(recent_posts, desc="posts", leave=False, position=1):
-            # This apparently deals with the API equivalent of the "see more" buttons
-            post.comments.replace_more(limit=None)
-            # This is supposed to visit all comments (not just top level)
-            recent_posts_comments.extend(post.comments.list())
-        with (output_dir / subreddit_name / "comments.pickle").open("wb") as comments_file:
-            pickle.dump(recent_posts_comments, comments_file)
+        comments_file_path = output_dir / subreddit_name / "comments.pickle"
+        if not comments_file_path.exists():
+            with posts_file_path.open("rb") as posts_file:
+                recent_posts = pickle.load(posts_file)
+            recent_posts_comments: List[Comment] = []
+            for post in tqdm(recent_posts, desc="posts", leave=False, position=0):
+                # This apparently deals with the API equivalent of the "see more" buttons
+                post.comments.replace_more(limit=None)
+                # This is supposed to visit all comments (not just top level)
+                recent_posts_comments.extend(post.comments.list())
+            with comments_file_path.open("wb") as comments_file:
+                pickle.dump(recent_posts_comments, comments_file)
 
 
 if __name__ == "__main__":
