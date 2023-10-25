@@ -69,7 +69,7 @@ def main():
         records.append({
             "subreddit": subreddit, "start": str(start), "end": str(end),
             "post_mentions": dict(post_mentions), "comment_mentions": dict(comment_mentions),
-            "replies_to_comment_mentions": dict(comment_mentions),
+            "replies_to_comment_mentions": dict(replies_to_comment_mentions),
             "total_posts": len(posts), "total_comments": len(comments)
         })
 
