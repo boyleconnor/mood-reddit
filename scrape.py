@@ -11,6 +11,8 @@ from tqdm import tqdm
 
 load_dotenv()
 
+DEFAULT_DATA_DIR = Path("./subreddits_data")
+
 # FIXME: Incomplete
 SUBREDDITS = [
     "Marijuana",
@@ -18,17 +20,6 @@ SUBREDDITS = [
     "420",
     "CannabisExtracts",
     "Delta8"
-]
-
-KEYWORDS = [
-    "HelloMood",
-    "Hellomood",
-    "hellomood",
-    "Hello Mood",
-    "Hello mood",
-    "hello mood",
-    "Mood",
-    "mood"
 ]
 
 
@@ -42,7 +33,7 @@ def get_reddit() -> praw.Reddit:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir", default=Path("./subreddits_data"), type=Path)
+    parser.add_argument("--output-dir", default=DEFAULT_DATA_DIR, type=Path)
     args = parser.parse_args()
 
     output_dir: Path = args.output_dir
